@@ -1,6 +1,9 @@
 import random
 from typing import Dict
 
+from perplexity_client import fact_check_image_b64
+
+
 def _make_result() -> Dict[str, str]:
     """
     Simulate analysis of a claim's factuality.
@@ -13,23 +16,35 @@ def _make_result() -> Dict[str, str]:
         explanation = ("The claim is likely true. It is supported by strong evidence or well-known facts, "
                        "indicating that it accurately reflects reality.")
     elif score > 60:
-        explanation = ("The claim appears mostly true, though it may contain some minor inaccuracies or be missing context. "
-                       "Overall, the core of the statement is factual.")
+        explanation = (
+            "The claim appears mostly true, though it may contain some minor inaccuracies or be missing context. "
+            "Overall, the core of the statement is factual.")
     elif score > 40:
-        explanation = ("The factual accuracy of the claim is uncertain. Some evidence supports it, but there are also conflicting sources "
-                       "or ambiguous information making it hard to verify conclusively.")
+        explanation = (
+            "The factual accuracy of the claim is uncertain. Some evidence supports it, but there are also conflicting sources "
+            "or ambiguous information making it hard to verify conclusively.")
     elif score > 20:
-        explanation = ("The claim is likely unverified or unverifiable. There is little reliable evidence to confirm it, and it may be misleading "
-                       "without additional context or sources.")
+        explanation = (
+            "The claim is likely unverified or unverifiable. There is little reliable evidence to confirm it, and it may be misleading "
+            "without additional context or sources.")
     else:
-        explanation = ("The claim is likely false. It contradicts established facts or reliable sources, indicating that it does not hold up under scrutiny.")
+        explanation = (
+            "The claim is likely false. It contradicts established facts or reliable sources, indicating that it does not hold up under scrutiny.")
     return {"score": score, "explanation": explanation}
+
 
 def analyze_text(claim: str):
     return _make_result()
 
-def analyze_image(image_base64: str):
-    return _make_result()
+
+def analyze_image(image_b64: str):
+    try:
+        return fact_check_image_b64(image_b64)
+    except Exception as exc:
+        # fall back to mock if API fails (keeps dev flow alive)
+        print("Perplexity call failed:", exc)
+        return _make_result()
+
 
 def analyze_audio_transcript(transcript: str):
     return _make_result()

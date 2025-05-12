@@ -46,13 +46,21 @@ async def analyze_file(
         mode: str = Form(...),  # "audio" | "text" | "image"
         file: UploadFile = File(...)
 ):
-    if mode != "audio":
-        raise HTTPException(400, "Only audio supported here")
+    # Reject oversized files early (Perplexity cap is 5 MB)
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(413, "File too large (>5 MB)")
 
-    # Turn the binary into base‑64 so we can reuse transcribe_audio()
-    audio_b64 = base64.b64encode(await file.read()).decode()
-    transcript = transcribe_audio(audio_b64)
-    return analyze_text(transcript)
+    blob = await file.read()
+    b64 = base64.b64encode(blob).decode()
+
+    if mode == "audio":
+        transcript = transcribe_audio(b64)
+        return analyze_text(transcript)
+
+    if mode == "image":
+        return analyze_image(b64)
+
+    raise HTTPException(400, "mode must be 'audio' or 'image'")
 
 
 if __name__ == "__main__":
