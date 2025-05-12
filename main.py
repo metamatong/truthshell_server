@@ -1,9 +1,15 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+import base64
 from typing import Optional
 
-from transcription import transcribe_audio
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi import UploadFile, File, Form, HTTPException
+from pydantic import BaseModel, Field
+
 from sonar_mock import analyze_text, analyze_image
+from transcription import transcribe_audio
+
+load_dotenv()
 
 app = FastAPI(title="TruthShell Backend", version="0.2.0")
 
@@ -33,6 +39,23 @@ async def analyze(req: AnalyzeRequest):
         except Exception as exc:
             return {"error": f"Audio transcription failed: {exc}"}
         return analyze_text(transcript)
+
+
+@app.post("/analyze/file")
+async def analyze_file(
+        mode: str = Form(...),  # "audio" | "text" | "image"
+        file: UploadFile = File(...)
+):
+    if mode != "audio":
+        raise HTTPException(400, "Only audio supported here")
+
+    # Turn the binary into base‑64 so we can reuse transcribe_audio()
+    audio_b64 = base64.b64encode(await file.read()).decode()
+    transcript = transcribe_audio(audio_b64)
+    return analyze_text(transcript)
+
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
