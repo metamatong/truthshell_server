@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 from typing import Optional
 
@@ -31,6 +32,15 @@ class AnalyzeRequest(BaseModel):
     text: Optional[str] = Field(None, description="Plain text claim.")
     image_base64: Optional[str] = Field(None, description="Base64‑encoded image (PNG/JPEG).")
     audio_base64: Optional[str] = Field(None, description="Base64‑encoded audio (WAV).")
+
+
+logger = logging.getLogger(__name__)
+
+
+@app.get("/")
+async def root():
+    logger.info("Root endpoint accessed")
+    return {"message": "Welcome to Vercel!"}
 
 
 @app.post("/analyze", dependencies=[Depends(get_api_key)])
