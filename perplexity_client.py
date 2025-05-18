@@ -1,5 +1,6 @@
-# perplexity_client.py
 import os, requests, json
+
+
 PPLX_KEY = os.getenv("PERPLEXITY_API_KEY")
 PPLX_ENDPOINT = "https://api.perplexity.ai/chat/completions"
 MODEL = "sonar-pro"
