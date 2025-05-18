@@ -84,9 +84,3 @@ async def analyze_file(
         return analyze_image(b64)
 
     raise HTTPException(400, "mode must be 'audio' or 'image'")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
