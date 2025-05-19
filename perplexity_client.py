@@ -1,5 +1,6 @@
-import os, requests, json
-
+import json
+import os
+import requests
 
 PPLX_KEY = os.getenv("PERPLEXITY_API_KEY")
 PPLX_ENDPOINT = "https://api.perplexity.ai/chat/completions"
