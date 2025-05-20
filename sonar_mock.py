@@ -1,50 +1,89 @@
+"""
+Mock implementation that returns data shaped exactly like
+
+data class TruthResponse(
+    @SerializedName("confidence_score") val confidenceScore: Int?,
+    @SerializedName("confidence_label") val confidenceLabel: String?,
+    @SerializedName("sources")         val sources: List<SourceItem>?,
+    @SerializedName("error_message")   val errorMessage: String?
+)
+
+data class SourceItem(
+    @SerializedName("url")     val url: String,
+    @SerializedName("title")   val title: String?,
+    @SerializedName("snippet") val snippet: String?
+)
+"""
 import random
-from typing import Dict
+from typing import Dict, List, Optional
 
-from perplexity_client import fact_check_image_b64
+from perplexity_client import fact_check_image_b64  # keep your real call
 
 
-def _make_result() -> Dict[str, str]:
-    """
-    Simulate analysis of a claim's factuality.
-    Returns a dictionary with a 'score' (0 to 100) and an 'explanation'.
-    """
-    # Generate a random factuality score
-    score = random.randint(0, 100)
-    # Determine a description based on the score range
+# ──────────────────────────────────────────────────────────────────────────────
+# helpers
+# ──────────────────────────────────────────────────────────────────────────────
+def _score_to_label(score: int) -> str:
     if score > 80:
-        explanation = ("The claim is likely true. It is supported by strong evidence or well-known facts, "
-                       "indicating that it accurately reflects reality.")
-    elif score > 60:
-        explanation = (
-            "The claim appears mostly true, though it may contain some minor inaccuracies or be missing context. "
-            "Overall, the core of the statement is factual.")
-    elif score > 40:
-        explanation = (
-            "The factual accuracy of the claim is uncertain. Some evidence supports it, but there are also conflicting sources "
-            "or ambiguous information making it hard to verify conclusively.")
-    elif score > 20:
-        explanation = (
-            "The claim is likely unverified or unverifiable. There is little reliable evidence to confirm it, and it may be misleading "
-            "without additional context or sources.")
-    else:
-        explanation = (
-            "The claim is likely false. It contradicts established facts or reliable sources, indicating that it does not hold up under scrutiny.")
-    return {"score": score, "explanation": explanation}
+        return "Very Likely True"
+    if score > 60:
+        return "Likely True"
+    if score > 40:
+        return "Uncertain"
+    if score > 20:
+        return "Likely False"
+    return "Very Likely False"
 
 
-def analyze_text(claim: str):
+def _mock_sources(n: int = 3) -> List[Dict[str, Optional[str]]]:
+    """Return n fake source items."""
+    domains = ["example.com", "news.example.net", "research.example.org"]
+    snippets = [
+        "Independent analysis supports the claim.",
+        "Experts are divided on the accuracy of the statement.",
+        "No reputable source could confirm the allegation.",
+        "Multiple eyewitnesses corroborated the report.",
+    ]
+    items = []
+    for i in range(n):
+        items.append(
+            {
+                "url": f"https://{domains[i % len(domains)]}/article/{random.randint(1000,9999)}",
+                "title": f"Mock Source Article #{i+1}",
+                "snippet": random.choice(snippets),
+            }
+        )
+    return items
+
+
+def _make_result() -> Dict[str, object]:
+    """Return a dict that matches TruthResponse exactly."""
+    score = random.randint(0, 100)
+    return {
+        "confidence_score": score,
+        "confidence_label": _score_to_label(score),
+        "sources": _mock_sources(),
+        "error_message": None,
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# public API
+# ──────────────────────────────────────────────────────────────────────────────
+def analyze_text(claim: str) -> Dict[str, object]:
     return _make_result()
 
 
-def analyze_image(image_b64: str):
+def analyze_image(image_b64: str) -> Dict[str, object]:
     try:
-        return fact_check_image_b64(image_b64)
+        return fact_check_image_b64(image_b64)  # real call (if available)
     except Exception as exc:
-        # fall back to mock if API fails (keeps dev flow alive)
+        # fall back to mock while developing
         print("Perplexity call failed:", exc)
-        return _make_result()
+        result = _make_result()
+        result["error_message"] = str(exc)
+        return result
 
 
-def analyze_audio_transcript(transcript: str):
+def analyze_audio_transcript(transcript: str) -> Dict[str, object]:
     return _make_result()
