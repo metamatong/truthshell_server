@@ -9,7 +9,7 @@ from fastapi import UploadFile, File, Form, HTTPException
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
-from sonar_mock import analyze_text, analyze_image
+from sonar import analyze_text, analyze_image
 from transcription import transcribe_audio
 
 load_dotenv()

@@ -1,23 +1,9 @@
-"""
-Mock implementation that returns data shaped exactly like
 
-data class TruthResponse(
-    @SerializedName("confidence_score") val confidenceScore: Int?,
-    @SerializedName("confidence_label") val confidenceLabel: String?,
-    @SerializedName("sources")         val sources: List<SourceItem>?,
-    @SerializedName("error_message")   val errorMessage: String?
-)
-
-data class SourceItem(
-    @SerializedName("url")     val url: String,
-    @SerializedName("title")   val title: String?,
-    @SerializedName("snippet") val snippet: String?
-)
-"""
 import random
-from typing import Dict, List, Optional
+from typing import Dict
+from typing import List, Optional
 
-from perplexity_client import fact_check_image_b64  # keep your real call
+from perplexity_client import fact_check_image_b64, fact_check_claim
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -71,19 +57,11 @@ def _make_result() -> Dict[str, object]:
 # public API
 # ──────────────────────────────────────────────────────────────────────────────
 def analyze_text(claim: str) -> Dict[str, object]:
-    return _make_result()
+    return fact_check_claim(claim)
 
 
 def analyze_image(image_b64: str) -> Dict[str, object]:
-    try:
-        return fact_check_image_b64(image_b64)  # real call (if available)
-    except Exception as exc:
-        # fall back to mock while developing
-        print("Perplexity call failed:", exc)
-        result = _make_result()
-        result["error_message"] = str(exc)
-        return result
-
+    return fact_check_image_b64(image_b64)
 
 def analyze_audio_transcript(transcript: str) -> Dict[str, object]:
-    return _make_result()
+    return fact_check_claim(transcript)
