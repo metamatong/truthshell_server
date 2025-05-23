@@ -1,5 +1,8 @@
 import json
 import os
+import re
+from urllib.parse import urlparse
+
 import requests
 
 PPLX_KEY = os.getenv("PERPLEXITY_API_KEY")
@@ -16,14 +19,37 @@ JSON_SCHEMA = {
 }
 
 def _post(payload: dict) -> dict:
+    """Fire-and-forget helper that preserves citations."""
     headers = {
         "Authorization": f"Bearer {PPLX_KEY}",
         "Content-Type":  "application/json",
         "Accept":        "application/json",
     }
-    resp = requests.post(PPLX_ENDPOINT, headers=headers, json=payload, timeout=60)
+
+    resp = requests.post(PPLX_ENDPOINT, headers=headers,
+                         json=payload, timeout=60)
     resp.raise_for_status()
-    return json.loads(resp.json()["choices"][0]["message"]["content"])
+    raw = resp.json()                       # full outer response
+
+    # 1️⃣  core JSON (score, explanation) from the inner content
+    core = json.loads(raw["choices"][0]["message"]["content"])
+
+    # 2️⃣  citations list (may be missing if search was disabled)
+    urls = raw.get("citations", [])
+
+    # 3️⃣  make a neat sources array with index + domain
+    sources = [
+        {"index": i+1,
+         "url": u,
+         "domain": urlparse(u).netloc.replace("www.", "")}
+        for i, u in enumerate(urls)
+    ]
+
+    # 4️⃣  scrub any dangling “[n]” refs and attach sources
+    core["explanation"] = re.sub(r"\[\d+\]", "", core["explanation"]).strip()
+    core["sources"]     = sources
+
+    return core
 
 def fact_check_claim(claim: str) -> dict:
     """Ask Sonar‑Pro to fact‑check a **text** claim and return structured JSON."""
